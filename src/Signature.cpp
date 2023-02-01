@@ -59,11 +59,80 @@ Signature::Signature(const char* IDASignature)
 			break;
 
 		// Construct whole byte from two characters
-		uint8_t c1 = ToHex(IDASignature[i]);
-		uint8_t c2 = ToHex(IDASignature[i + 1]);
+		uint32_t c1 = ToHex(IDASignature[i]);
+		uint32_t c2 = ToHex(IDASignature[i + 1]);
 		m_Bytes.push_back((c1 * 0x10) + c2);
 
 		// Skip over the second part of the byte
 		i++;
 	}
+
+	// Perform the scan
+	Scan();
+}
+
+Signature& Signature::Scan()
+{
+	// Helper function to scan for pattern
+	auto CheckPattern = [this](uintptr_t Location) -> bool
+	{
+		for (size_t i = 0; i < m_Bytes.size(); i++)
+		{
+			if (m_Bytes[i] != 0xFFFFFFFF && m_Bytes[i] != *reinterpret_cast<uint8_t*>(Location + i))
+				return false;
+		}
+		return true;
+	};
+
+	// Check if already scanned
+	if (m_Result)
+		return *this;
+	
+	// Get information about process
+	MODULEINFO ModuleInfo;
+	GetModuleInformation(GetCurrentProcess(), g_GameModule, &ModuleInfo, sizeof(MODULEINFO));
+	MEMORY_BASIC_INFORMATION Mbi;
+
+	const auto Begin = g_BaseAddress; // Begin location of scan (base address)
+	const auto Size = ModuleInfo.SizeOfImage; // Total size of process (area to be scanned)
+
+	// Loop through memory regions
+	for (uintptr_t Curr = Begin; Curr < Begin + Size; Curr += Mbi.RegionSize)
+	{
+		// Check if current region is invalid
+		if (!VirtualQuery(reinterpret_cast<LPCVOID>(Curr), &Mbi, sizeof(Mbi)) || Mbi.State != MEM_COMMIT || Mbi.Protect == PAGE_NOACCESS)
+			continue;
+
+		// Loop through current region
+		for (size_t i = 0; i < Size; ++i)
+		{
+			// Check if pattern matches at current location
+			if (CheckPattern(Curr + i))
+			{
+				m_Result = Curr + i;
+				return *this;
+			}
+		}
+	}
+
+	// At this point the scan has failed so m_Result is 0
+	assert(m_Result);
+	return *this;
+}
+
+Signature& Signature::Add(ptrdiff_t n)
+{
+	m_Result += n;
+	return *this;
+}
+
+Signature& Signature::Sub(ptrdiff_t n)
+{
+	m_Result -= n;
+	return *this;
+}
+
+Signature& Signature::Rip()
+{
+	return Add(*Get<int32_t*>()).Add(4);
 }

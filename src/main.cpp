@@ -1,4 +1,6 @@
 #include "pch.h"
+#include "Signature.h"
+#include "rage/scrNativeCallContext.h"
 
 static FILE* s_File{};
 DWORD WINAPI MainThread(LPVOID lpThreadParameter)
@@ -9,6 +11,11 @@ DWORD WINAPI MainThread(LPVOID lpThreadParameter)
 
 	printf("RDR2.exe: 0x%llX\n", g_BaseAddress);
 	
+	auto GetNativeHandler = Signature("E8 ? ? ? ? 42 8B 9C FE").Add(1).Rip().Get<scrNativeHandler(*)(uint64_t)>();
+	printf("GetNativeHandler: 0x%llX\n", (uint64_t)GetNativeHandler);
+	printf("MISC::SHOOT_SINGLE_BULLET_BETWEEN_COORDS: 0x%llX\n", (uint64_t)GetNativeHandler(0x867654CBC7606F2C));
+	printf("ENTITY::IS_ENTITY_IN_ANGLED_AREA: 0x%llX\n", (uint64_t)GetNativeHandler(0xD3151E53134595E5));
+
 	while (g_Running)
 	{
 		// To quit press left control and end

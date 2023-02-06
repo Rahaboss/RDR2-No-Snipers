@@ -9,6 +9,10 @@ workspace "RDR2-No-Snipers"
 		"WIN32_LEAN_AND_MEAN" -- Exclude rarely used stuff
 	}
 
+	disablewarnings {
+		"26812" -- Prefer "enum class"
+	}
+
 	-- Locations
 	startproject "RDR2-No-Snipers"
 	targetdir "bin/%{cfg.buildcfg}/%{prj.name}"

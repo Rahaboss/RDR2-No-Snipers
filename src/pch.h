@@ -11,6 +11,9 @@
 #include <Windows.h>
 #include <Psapi.h>
 
+// MinHook
+#include <MinHook.h>
+
 // Global variables
 inline HMODULE g_Module; // DLL handle (used to exit thread)
 inline HMODULE g_GameModule; // Game handle

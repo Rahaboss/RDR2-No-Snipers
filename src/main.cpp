@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Signature.h"
 #include "rage/scrNativeCallContext.h"
+#include "Hooking.h"
 
 static FILE* s_File{};
 DWORD WINAPI MainThread(LPVOID lpThreadParameter)
@@ -16,6 +17,16 @@ DWORD WINAPI MainThread(LPVOID lpThreadParameter)
 	printf("MISC::SHOOT_SINGLE_BULLET_BETWEEN_COORDS: 0x%llX\n", (uint64_t)GetNativeHandler(0x867654CBC7606F2C));
 	printf("ENTITY::IS_ENTITY_IN_ANGLED_AREA: 0x%llX\n", (uint64_t)GetNativeHandler(0xD3151E53134595E5));
 
+	printf("Initializing MinHook\n");
+	assert(MH_Initialize() == MH_OK);
+
+	printf("Creating hooks\n");
+	ShootBulletHook.Create(GetNativeHandler(0x867654CBC7606F2C), MISC::SHOOT_SINGLE_BULLET_BETWEEN_COORDS);
+	EntityInAreaHook.Create(GetNativeHandler(0xD3151E53134595E5), ENTITY::IS_ENTITY_IN_ANGLED_AREA);
+	
+	printf("Enabling hooks\n");
+	assert(MH_EnableHook(MH_ALL_HOOKS) == MH_OK);
+
 	while (g_Running)
 	{
 		// To quit press left control and end
@@ -25,6 +36,16 @@ DWORD WINAPI MainThread(LPVOID lpThreadParameter)
 		std::this_thread::sleep_for(25ms);
 	}
 	
+	printf("Disabling hooks\n");
+	assert(MH_DisableHook(MH_ALL_HOOKS) == MH_OK);
+
+	printf("Removing hooks\n");
+	EntityInAreaHook.Remove();
+	ShootBulletHook.Remove();
+	
+	printf("Uninitializing MinHook\n");
+	assert(MH_Uninitialize() == MH_OK);
+
 	fclose(s_File);
 	FreeConsole();
 

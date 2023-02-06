@@ -54,9 +54,9 @@ public:
 	}
 
 	template<typename T>
-	void SetRet(size_t Index, T Ret)
+	void SetRet(T Ret)
 	{
-		GetRet<T>(Index) = Ret;
+		GetRet<T>() = Ret;
 	}
 }; //Size: 0x00E0
 static_assert(sizeof(scrNativeCallContext) == 0xE0);
